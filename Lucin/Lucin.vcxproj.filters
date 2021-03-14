@@ -23,10 +23,13 @@
     <ClInclude Include="math\vec3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main\color.h">
+    <ClInclude Include="Renderer\ray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main\ray.h">
+    <ClInclude Include="Renderer\color.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Hittable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
