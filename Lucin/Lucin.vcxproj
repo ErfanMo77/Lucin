@@ -144,9 +144,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer\color.h" />
-    <ClInclude Include="Renderer\Hittable.h" />
+    <ClInclude Include="Renderer\hittable.h" />
+    <ClInclude Include="Renderer\hittable_list.h" />
     <ClInclude Include="Renderer\ray.h" />
     <ClInclude Include="math\vec3.h" />
+    <ClInclude Include="Renderer\sphere.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -29,7 +29,13 @@
     <ClInclude Include="Renderer\color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\Hittable.h">
+    <ClInclude Include="Renderer\hittable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\sphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\hittable_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
