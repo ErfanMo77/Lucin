@@ -64,7 +64,7 @@ int main() {
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     unsigned char* data = new unsigned char[image_width * image_height * 3];
     const int samples_per_pixel = 16;
-	const int maxDepth = 20;
+	const int maxDepth = 10;
 
 	// World
 	hittable_list world;
