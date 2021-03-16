@@ -141,6 +141,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main\main.cpp" />
+    <ClCompile Include="stb\stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer\color.h" />
@@ -149,6 +150,9 @@
     <ClInclude Include="Renderer\ray.h" />
     <ClInclude Include="math\vec3.h" />
     <ClInclude Include="Renderer\sphere.h" />
+    <ClInclude Include="Renderer\Utility.h" />
+    <ClInclude Include="stb\stb_image.h" />
+    <ClInclude Include="stb\stb_image_write.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
