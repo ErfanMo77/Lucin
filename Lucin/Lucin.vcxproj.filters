@@ -50,5 +50,8 @@
     <ClInclude Include="stb\stb_image_write.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

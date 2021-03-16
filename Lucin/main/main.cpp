@@ -6,6 +6,7 @@
 #include "Renderer/sphere.h"
 #include "Renderer/Utility.h"
 #include "Renderer/color.h"
+#include "Renderer/camera.h"
 #include "Renderer/hittable_list.h"
 
 double hit_sphere(const point3& center, double radius, const ray& r) {
@@ -33,14 +34,31 @@ color ray_color(const ray& r, const hittable& world) {
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
+void write_color(color& col, int samples_per_pixel) {
+	auto r = col.x();
+	auto g = col.y();
+	auto b = col.z();
+
+	// Divide the color by the number of samples.
+	auto scale = 1.0 / samples_per_pixel;
+	r *= scale;
+	g *= scale;
+	b *= scale;
+
+	col[0] = static_cast<int>(256 * clamp(r, 0.0, 0.999));
+    col[1] = static_cast<int>(256 * clamp(g, 0.0, 0.999));
+    col[2] = static_cast<int>(256 * clamp(b, 0.0, 0.999));
+}
+
 
 int main() {
 
     // Image
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 400;
+    const int image_width = 1920;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     unsigned char* data = new unsigned char[image_width * image_height * 3];
+    const int samples_per_pixel = 8;
 
 	// World
 	hittable_list world;
@@ -48,26 +66,26 @@ int main() {
 	world.add(make_shared<sphere>(point3(0, -110, -2), 100));
 
     // Camera
-    auto viewport_height = 2.0;
-    auto viewport_width = aspect_ratio * viewport_height;
-    auto focal_length = 1.0;
-
-    auto origin = point3(0, 0, 0);
-    auto horizontal = vec3(viewport_width, 0, 0);
-    auto vertical = vec3(0, viewport_height, 0);
-    auto lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
+	camera cam;
 
     int index = 0;
     for (int j = image_height - 1; j >= 0; --j) {
         for (int i = 0; i < image_width; ++i) {
-            auto u = double(i) / (image_width - 1);
-            auto v = double(j) / (image_height - 1);
-            ray r(origin, lower_left_corner + u * horizontal + v * vertical - origin);
-            color pixel_color = ray_color(r,world);
-            data[index++] = static_cast<int>(255.999 * pixel_color.x());
-            data[index++] = static_cast<int>(255.999 * pixel_color.y());
-            data[index++] = static_cast<int>(255.999 * pixel_color.z());
+			color pixel_color(0, 0, 0);
+
+			for (int s = 0; s < samples_per_pixel; ++s) {
+				auto u = (i + random_double()) / (image_width - 1);
+				auto v = (j + random_double()) / (image_height - 1);
+				ray r = cam.get_ray(u, v);
+				pixel_color += ray_color(r, world);
+			}
+
+            write_color(pixel_color,samples_per_pixel);
+            data[index++] = static_cast<unsigned char>(pixel_color.x());
+            data[index++] = static_cast<unsigned char>(pixel_color.y());
+            data[index++] = static_cast<unsigned char>(pixel_color.z());
         }
     }
-    stbi_write_jpg("image.jpg", image_width, image_height, 3, data, image_width*sizeof(int));
+    stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
+
 }
