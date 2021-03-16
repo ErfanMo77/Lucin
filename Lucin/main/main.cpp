@@ -1,5 +1,8 @@
 #include <iostream>
 
+#include "stb/stb_image.h"
+#include "stb/stb_image_write.h"
+
 #include "Renderer/sphere.h"
 #include "Renderer/Utility.h"
 #include "Renderer/color.h"
@@ -37,7 +40,7 @@ int main() {
     const auto aspect_ratio = 16.0 / 9.0;
     const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-
+    unsigned char* data = new unsigned char[image_width * image_height * 3];
 
 	// World
 	hittable_list world;
@@ -54,19 +57,17 @@ int main() {
     auto vertical = vec3(0, viewport_height, 0);
     auto lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
 
-    // Render
-    std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
-
+    int index = 0;
     for (int j = image_height - 1; j >= 0; --j) {
-        std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
         for (int i = 0; i < image_width; ++i) {
             auto u = double(i) / (image_width - 1);
             auto v = double(j) / (image_height - 1);
             ray r(origin, lower_left_corner + u * horizontal + v * vertical - origin);
             color pixel_color = ray_color(r,world);
-            write_color(std::cout, pixel_color);
+            data[index++] = static_cast<int>(255.999 * pixel_color.x());
+            data[index++] = static_cast<int>(255.999 * pixel_color.y());
+            data[index++] = static_cast<int>(255.999 * pixel_color.z());
         }
     }
-
-    std::cerr << "\nDone.\n";
+    stbi_write_jpg("image.jpg", image_width, image_height, 3, data, image_width*sizeof(int));
 }
