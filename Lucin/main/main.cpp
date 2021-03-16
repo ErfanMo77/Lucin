@@ -44,11 +44,11 @@ void write_color(color& col, int samples_per_pixel) {
 	auto g = col.y();
 	auto b = col.z();
 
-	// Divide the color by the number of samples.
+	// Divide the color by the number of samples and gamma-correct for gamma=2.0.
 	auto scale = 1.0 / samples_per_pixel;
-	r *= scale;
-	g *= scale;
-	b *= scale;
+	r = sqrt(scale * r);
+	g = sqrt(scale * g);
+	b = sqrt(scale * b);
 
 	col[0] = static_cast<int>(256 * clamp(r, 0.0, 0.999));
     col[1] = static_cast<int>(256 * clamp(g, 0.0, 0.999));
@@ -64,7 +64,7 @@ int main() {
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     unsigned char* data = new unsigned char[image_width * image_height * 3];
     const int samples_per_pixel = 16;
-	const int maxDepth = 10;
+	const int maxDepth = 50;
 
 	// World
 	hittable_list world;
