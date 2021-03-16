@@ -1,1 +1,0 @@
-call x64\Debug\Lucin.exe > image.ppm
