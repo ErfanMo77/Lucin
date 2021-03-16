@@ -55,7 +55,7 @@ int main() {
 
     // Image
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 1920;
+    const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     unsigned char* data = new unsigned char[image_width * image_height * 3];
     const int samples_per_pixel = 8;
@@ -63,7 +63,7 @@ int main() {
 	// World
 	hittable_list world;
 	world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
-	world.add(make_shared<sphere>(point3(0, -110, -2), 100));
+	world.add(make_shared<sphere>(point3(0, -120, -2), 100));
 
     // Camera
 	camera cam;
