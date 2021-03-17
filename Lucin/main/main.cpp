@@ -30,7 +30,7 @@ color ray_color(const ray& r, const hittable& world, int depth) {
 	if (depth <= 0)
 		return color(0, 0, 0);
 
-	if (world.hit(r, 0, infinity, rec)) {
+	if (world.hit(r, 0.001, infinity, rec)) {
 		point3 target = rec.p + rec.normal + random_in_unit_sphere();
 		return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth - 1);
 	}
@@ -63,7 +63,7 @@ int main() {
     const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     unsigned char* data = new unsigned char[image_width * image_height * 3];
-    const int samples_per_pixel = 16;
+    const int samples_per_pixel = 100;
 	const int maxDepth = 50;
 
 	// World
@@ -81,18 +81,20 @@ int main() {
 			color pixel_color(0, 0, 0);
 
 			for (int s = 0; s < samples_per_pixel; ++s) {
-				auto u = (i + random_double()) / (image_width - 1);
-				auto v = (j + random_double()) / (image_height - 1);
+				auto u = (i + random_double()) / (int)(image_width - 1);
+				auto v = (j + random_double()) / (int)(image_height - 1);
 				ray r = cam.get_ray(u, v);
 				pixel_color += ray_color(r, world,maxDepth);
 			}
 
             write_color(pixel_color,samples_per_pixel);
-            data[index++] = static_cast<unsigned char>(pixel_color.x());
-            data[index++] = static_cast<unsigned char>(pixel_color.y());
-            data[index++] = static_cast<unsigned char>(pixel_color.z());
+            data[index++] = static_cast<char>((int)pixel_color.x());
+            data[index++] = static_cast<char>((int)pixel_color.y());
+            data[index++] = static_cast<char>((int)pixel_color.z());
         }
     }
-    stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
+	//stbi_write_png("../image.png", image_width, image_height, 3, data, image_width * sizeof(unsigned char)*3);
+	stbi_write_tga("../image.tga", image_width, image_height, 3, data);
+    //stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
 	std::cerr << "\nDone.\n";
 }
