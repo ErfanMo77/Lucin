@@ -31,7 +31,7 @@ color ray_color(const ray& r, const hittable& world, int depth) {
 		return color(0, 0, 0);
 
 	if (world.hit(r, 0.001, infinity, rec)) {
-		point3 target = rec.p + rec.normal + random_in_unit_sphere();
+		point3 target = rec.p + rec.normal + random_unit_vector();
 		return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth - 1);
 	}
     vec3 unit_direction = unit_vector(r.direction());
@@ -58,12 +58,12 @@ void write_color(color& col, int samples_per_pixel) {
 
 int main() {
 
-    // Image
-    const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 400;
-    const int image_height = static_cast<int>(image_width / aspect_ratio);
-    unsigned char* data = new unsigned char[image_width * image_height * 3];
-    const int samples_per_pixel = 100;
+	// Image
+	const auto aspect_ratio = 16.0 / 9.0;
+	const int image_width = 400;
+	const int image_height = static_cast<int>(image_width / aspect_ratio);
+	unsigned char* data = new unsigned char[image_width * image_height * 3];
+	const int samples_per_pixel = 100;
 	const int maxDepth = 50;
 
 	// World
@@ -71,30 +71,31 @@ int main() {
 	world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
 	world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
 
-    // Camera
+	// Camera
 	camera cam;
 
-    int index = 0;
-    for (int j = image_height - 1; j >= 0; --j) {
+	int index = 0;
+	for (int j = image_height - 1; j >= 0; --j) {
 		std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
-        for (int i = 0; i < image_width; ++i) {
+		for (int i = 0; i < image_width; ++i) {
 			color pixel_color(0, 0, 0);
 
 			for (int s = 0; s < samples_per_pixel; ++s) {
 				auto u = (i + random_double()) / (int)(image_width - 1);
 				auto v = (j + random_double()) / (int)(image_height - 1);
 				ray r = cam.get_ray(u, v);
-				pixel_color += ray_color(r, world,maxDepth);
+				pixel_color += ray_color(r, world, maxDepth);
 			}
 
-            write_color(pixel_color,samples_per_pixel);
-            data[index++] = static_cast<char>((int)pixel_color.x());
-            data[index++] = static_cast<char>((int)pixel_color.y());
-            data[index++] = static_cast<char>((int)pixel_color.z());
-        }
-    }
+			write_color(pixel_color, samples_per_pixel);
+			data[index++] = static_cast<char>(pixel_color.x());
+			data[index++] = static_cast<char>(pixel_color.y());
+			data[index++] = static_cast<char>(pixel_color.z());
+		}
+	}
 	//stbi_write_png("../image.png", image_width, image_height, 3, data, image_width * sizeof(unsigned char)*3);
 	stbi_write_tga("../image.tga", image_width, image_height, 3, data);
-    //stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
+	//stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
 	std::cerr << "\nDone.\n";
+
 }

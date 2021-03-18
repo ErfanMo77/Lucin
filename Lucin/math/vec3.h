@@ -16,6 +16,10 @@ class vec3
 		double y() const { return e[1]; }
 		double z() const { return e[2]; }
 
+		int r() const { return static_cast<int>(e[0]); }
+		int g() const { return static_cast<int>(e[1]); }
+		int b() const { return static_cast<int>(e[2]); }
+
 		vec3 operator-() const {
 			return vec3(-e[0], -e[1], -e[2]);
 		}
@@ -111,4 +115,16 @@ vec3 random_in_unit_sphere() {
 		if (p.length_squared() >= 1) continue;
 		return p;
 	}
+}
+
+vec3 random_unit_vector() {
+	return unit_vector(random_in_unit_sphere());
+}
+
+vec3 random_in_hemisphere(const vec3& normal) {
+	vec3 in_unit_sphere = random_in_unit_sphere();
+	if (dot(in_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
+		return in_unit_sphere;
+	else
+		return -in_unit_sphere;
 }
