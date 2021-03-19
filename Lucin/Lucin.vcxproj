@@ -148,6 +148,7 @@
     <ClInclude Include="Renderer\color.h" />
     <ClInclude Include="Renderer\hittable.h" />
     <ClInclude Include="Renderer\hittable_list.h" />
+    <ClInclude Include="Renderer\material.h" />
     <ClInclude Include="Renderer\ray.h" />
     <ClInclude Include="math\vec3.h" />
     <ClInclude Include="Renderer\sphere.h" />
