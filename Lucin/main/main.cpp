@@ -1,13 +1,14 @@
 #include <iostream>
 
+#include <chrono>
+
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 
 #include "Renderer/sphere.h"
-#include "Renderer/Utility.h"
-#include "Renderer/color.h"
 #include "Renderer/camera.h"
 #include "Renderer/hittable_list.h"
+#include "Renderer/material.h"
 
 double hit_sphere(const point3& center, double radius, const ray& r) {
 	vec3 oc = r.origin() - center;
@@ -25,14 +26,17 @@ double hit_sphere(const point3& center, double radius, const ray& r) {
 }
 
 color ray_color(const ray& r, const hittable& world, int depth) {
-    hit_record rec;
+	hit_record rec; 
 	// If we've exceeded the ray bounce limit, no more light is gathered.
 	if (depth <= 0)
 		return color(0, 0, 0);
 
 	if (world.hit(r, 0.001, infinity, rec)) {
-		point3 target = rec.p + rec.normal + random_unit_vector();
-		return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth - 1);
+		ray scattered;
+		color attenuation;
+		if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+			return attenuation * ray_color(scattered, world, depth - 1);
+		return color(0, 0, 0);
 	}
     vec3 unit_direction = unit_vector(r.direction());
     auto t = 0.5 * (unit_direction.y() + 1.0);
@@ -58,6 +62,9 @@ void write_color(color& col, int samples_per_pixel) {
 
 int main() {
 
+	//timer
+	auto start = std::chrono::steady_clock::now();
+
 	// Image
 	const auto aspect_ratio = 16.0 / 9.0;
 	const int image_width = 400;
@@ -66,10 +73,19 @@ int main() {
 	const int samples_per_pixel = 100;
 	const int maxDepth = 50;
 
+
 	// World
 	hittable_list world;
-	world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
-	world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
+
+	auto material_ground = make_shared<lambertian>(color(0.5, 0.5, 0.0));
+	auto material_center = make_shared<lambertian>(color(0.9, 0.3, 0.3));
+	auto material_left = make_shared<metal>(color(0.8, 0.8, 0.8),0.2);
+	auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2),0.8);
+
+	world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
+	world.add(make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, material_center));
+	world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
+	world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
 
 	// Camera
 	camera cam;
@@ -97,5 +113,11 @@ int main() {
 	stbi_write_tga("../image.tga", image_width, image_height, 3, data);
 	//stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
 	std::cerr << "\nDone.\n";
+
+	auto end = std::chrono::steady_clock::now();
+
+	std::cerr << "Elapsed time in seconds : "
+		<< std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+		<< " s" ;
 
 }

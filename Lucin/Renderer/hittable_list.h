@@ -2,7 +2,7 @@
 #ifndef HITTABLE_LIST_H
 #define HITTABLE_LIST_H
 
-#include "hittable.h"
+#include "Renderer/hittable.h"
 
 #include <memory>
 #include <vector>
