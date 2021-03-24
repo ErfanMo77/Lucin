@@ -10,21 +10,6 @@
 #include "Renderer/hittable_list.h"
 #include "Renderer/material.h"
 
-double hit_sphere(const point3& center, double radius, const ray& r) {
-	vec3 oc = r.origin() - center;
-	auto a = r.direction().length_squared();
-	auto half_b = dot(oc, r.direction());
-	auto c = oc.length_squared() - radius * radius;
-	auto discriminant = half_b * half_b - a * c;
-
-	if (discriminant < 0) {
-		return -1.0;
-	}
-	else {
-		return (-half_b - sqrt(discriminant)) / a;
-	}
-}
-
 color ray_color(const ray& r, const hittable& world, int depth) {
 	hit_record rec; 
 	// If we've exceeded the ray bounce limit, no more light is gathered.
@@ -70,25 +55,23 @@ int main() {
 	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
 	unsigned char* data = new unsigned char[image_width * image_height * 3];
-	const int samples_per_pixel = 255;
+	const int samples_per_pixel = 100;
 	const int maxDepth = 50;
 
 
 	// World
+	auto R = cos(pi / 4);
 	hittable_list world;
 
-	auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-	auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-	auto material_left = make_shared<dielectric>(1.5);
-	auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
+	auto material_left = make_shared<lambertian>(color(0, 0, 1));
+	auto material_right = make_shared<lambertian>(color(1, 0, 0));
 
-	world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
-	world.add(make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, material_center));
-	world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), -0.3, material_left));
-	world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
+	world.add(make_shared<sphere>(point3(-R, 0, -1), R, material_left));
+	world.add(make_shared<sphere>(point3(R, 0, -1), R, material_right));
 
 	// Camera
-	camera cam;
+
+	camera cam(90.0, aspect_ratio);
 
 	int index = 0;
 	for (int j = image_height - 1; j >= 0; --j) {
