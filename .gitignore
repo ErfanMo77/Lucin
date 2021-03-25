@@ -351,3 +351,4 @@ MigrationBackup/
 
 *.jpg
 *.tga
+/image.psd
