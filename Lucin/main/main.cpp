@@ -55,7 +55,7 @@ hittable_list random_scene() {
 			auto choose_mat = random_double();
 			point3 center(a + 0.9 * random_double(), 0.2, b + 0.9 * random_double());
 
-			if ((center - point3(4, 0.2, 0)).length() > 1.3) {
+			if ((center - point3(4, 0.2, 0)).length() > 0.9) {
 				shared_ptr<material> sphere_material;
 
 				if (choose_mat < 0.8) {
@@ -97,12 +97,13 @@ int main() {
 
 	//timer
 	auto start = std::chrono::steady_clock::now();
+	
 
 	const auto aspect_ratio = 3.0 / 2.0;
-	const int image_width = 1200;
+	const int image_width = 300;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
 	unsigned char* data = new unsigned char[image_width * image_height * 3];
-	const int samples_per_pixel = 500;
+	const int samples_per_pixel = 100;
 	const int maxDepth = 50;
 
 	// World
@@ -128,9 +129,15 @@ int main() {
 	camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
 
 	int index = 0;
+	int count = 0;
+	std::chrono::nanoseconds delta(0);
+	std::chrono::nanoseconds mean(0);
+	
+	
 	for (int j = image_height - 1; j >= 0; --j) {
-		std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
+		std::cerr << "Scanlines remaining: " << j << ' ';
 		for (int i = 0; i < image_width; ++i) {
+			auto startTime = std::chrono::steady_clock::now();
 			color pixel_color(0, 0, 0);
 
 			for (int s = 0; s < samples_per_pixel; ++s) {
@@ -144,11 +151,21 @@ int main() {
 			data[index++] = static_cast<char>(pixel_color.x());
 			data[index++] = static_cast<char>(pixel_color.y());
 			data[index++] = static_cast<char>(pixel_color.z());
+			count++;
+
+			auto deltaTime = std::chrono::steady_clock::now();
+			if (count % 100 == 0) {
+				delta = std::chrono::duration_cast<std::chrono::nanoseconds>(deltaTime - startTime);
+				mean += delta;
+				auto avg = (mean + delta).count() / count*100;
+				std::cerr << "\rEstimated remaining time: " << avg * (image_height * image_width - count) / 1000000000 << ' ';
+			}
 		}
+
 	}
 	//stbi_write_png("../image.png", image_width, image_height, 3, data, image_width * sizeof(unsigned char)*3);
-	stbi_write_tga("../image.tga", image_width, image_height, 3, data);
-	//stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
+	//stbi_write_tga("../image.tga", image_width, image_height, 3, data);
+	stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
 	std::cerr << "\nDone.\n";
 
 	auto end = std::chrono::steady_clock::now();
