@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <chrono>
+#include <thread>
 
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
@@ -9,6 +10,24 @@
 #include "Renderer/camera.h"
 #include "Renderer/hittable_list.h"
 #include "Renderer/material.h"
+
+
+//Global variables
+unsigned char* data;
+const auto aspect_ratio = 3.0 / 2.0;
+const int image_width = 1200;
+const int image_height = static_cast<int>(image_width / aspect_ratio);
+const int maxDepth = 50;
+
+point3 lookfrom(13, 2, 3);
+point3 lookat(0, 0, 0);
+vec3 vup(0, 1, 0);
+auto dist_to_focus = 10.0;
+auto aperture = 0.1;
+camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+
+//threads
+int threadsize = 40;
 
 color ray_color(const ray& r, const hittable& world, int depth) {
 	hit_record rec; 
@@ -92,6 +111,39 @@ hittable_list random_scene() {
 	return world;
 }
 
+void render(int lineIndex, int samples_per_pixel, hittable_list world) {
+	int stride = image_height / threadsize;
+	int index = (lineIndex)*image_width*3;
+	for (int j = image_height-lineIndex; j > (image_height-lineIndex) - stride && j!=0; j--) {
+		//std::cerr << "Scanlines remaining: " << j << ' ';
+		for (int i = 0; i < image_width; ++i) {
+			//auto startTime = std::chrono::steady_clock::now();
+			color pixel_color(0, 0, 0);
+
+			for (int s = 0; s < samples_per_pixel; ++s) {
+				auto u = (i + random_double()) / (int)(image_width - 1);
+				auto v = (j + random_double()) / (int)(image_height - 1);
+				ray r = cam.get_ray(u, v);
+				pixel_color += ray_color(r, world, maxDepth);
+			}
+
+			write_color(pixel_color, samples_per_pixel);
+			data[index++] = static_cast<char>(pixel_color.x());
+			data[index++] = static_cast<char>(pixel_color.y());
+			data[index++] = static_cast<char>(pixel_color.z());
+			//count++;
+
+			//auto deltaTime = std::chrono::steady_clock::now();
+			//if (count % 100 == 0) {
+			//	delta = std::chrono::duration_cast<std::chrono::nanoseconds>(deltaTime - startTime);
+			//	mean += delta;
+			//	auto avg = (mean + delta).count() / count * 100;
+			//	std::cerr << "\rEstimated remaining time: " << avg * (image_height * image_width - count) / 1000000000 << ' ';
+			//}
+		}
+	}
+}
+
 
 int main() {
 
@@ -99,12 +151,10 @@ int main() {
 	auto start = std::chrono::steady_clock::now();
 	
 
-	const auto aspect_ratio = 3.0 / 2.0;
-	const int image_width = 300;
-	const int image_height = static_cast<int>(image_width / aspect_ratio);
-	unsigned char* data = new unsigned char[image_width * image_height * 3];
-	const int samples_per_pixel = 100;
-	const int maxDepth = 50;
+
+	data = new unsigned char[image_width * image_height * 3];
+	const int samples_per_pixel = 1;
+
 
 	// World
 	auto world = random_scene();
@@ -120,13 +170,17 @@ int main() {
 	world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), -0.45, material_left));
 	world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
 
-	point3 lookfrom(13, 2, 3);
-	point3 lookat(0, 0, 0);
-	vec3 vup(0, 1, 0);
-	auto dist_to_focus = 10.0;
-	auto aperture = 0.1;
 
-	camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+
+	std::vector<std::thread> threads;
+	for (int i = 0; i < threadsize; i++) {
+		threads.push_back(std::thread(render,i*(image_height/threadsize),samples_per_pixel, world));
+	}
+
+	for(auto& thread:threads)
+	{
+		thread.join();
+	}
 
 	int index = 0;
 	int count = 0;
@@ -134,35 +188,7 @@ int main() {
 	std::chrono::nanoseconds mean(0);
 	
 	
-	for (int j = image_height - 1; j >= 0; --j) {
-		std::cerr << "Scanlines remaining: " << j << ' ';
-		for (int i = 0; i < image_width; ++i) {
-			auto startTime = std::chrono::steady_clock::now();
-			color pixel_color(0, 0, 0);
 
-			for (int s = 0; s < samples_per_pixel; ++s) {
-				auto u = (i + random_double()) / (int)(image_width - 1);
-				auto v = (j + random_double()) / (int)(image_height - 1);
-				ray r = cam.get_ray(u, v);
-				pixel_color += ray_color(r, world, maxDepth);
-			}
-
-			write_color(pixel_color, samples_per_pixel);
-			data[index++] = static_cast<char>(pixel_color.x());
-			data[index++] = static_cast<char>(pixel_color.y());
-			data[index++] = static_cast<char>(pixel_color.z());
-			count++;
-
-			auto deltaTime = std::chrono::steady_clock::now();
-			if (count % 100 == 0) {
-				delta = std::chrono::duration_cast<std::chrono::nanoseconds>(deltaTime - startTime);
-				mean += delta;
-				auto avg = (mean + delta).count() / count*100;
-				std::cerr << "\rEstimated remaining time: " << avg * (image_height * image_width - count) / 1000000000 << ' ';
-			}
-		}
-
-	}
 	//stbi_write_png("../image.png", image_width, image_height, 3, data, image_width * sizeof(unsigned char)*3);
 	//stbi_write_tga("../image.tga", image_width, image_height, 3, data);
 	stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
