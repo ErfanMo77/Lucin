@@ -114,12 +114,14 @@ hittable_list random_scene() {
 void render(int lineIndex, int samples_per_pixel, hittable_list world) {
 	int stride = image_height / threadsize;
 	int index = (lineIndex)*image_width*3;
+	auto startTime = std::chrono::steady_clock::now();
 	for (int j = image_height-lineIndex; j > (image_height-lineIndex) - stride && j!=0; j--) {
 		//std::cerr << "Scanlines remaining: " << j << ' ';
+		if (j == image_height - lineIndex - (stride / 2)) {
+			std::cout << "I'm half way there! \"thread number " << lineIndex / stride << "\"" << std::endl;
+		}
 		for (int i = 0; i < image_width; ++i) {
-			//auto startTime = std::chrono::steady_clock::now();
 			color pixel_color(0, 0, 0);
-
 			for (int s = 0; s < samples_per_pixel; ++s) {
 				auto u = (i + random_double()) / (int)(image_width - 1);
 				auto v = (j + random_double()) / (int)(image_height - 1);
@@ -133,15 +135,18 @@ void render(int lineIndex, int samples_per_pixel, hittable_list world) {
 			data[index++] = static_cast<char>(pixel_color.z());
 			//count++;
 
-			//auto deltaTime = std::chrono::steady_clock::now();
-			//if (count % 100 == 0) {
-			//	delta = std::chrono::duration_cast<std::chrono::nanoseconds>(deltaTime - startTime);
+
 			//	mean += delta;
 			//	auto avg = (mean + delta).count() / count * 100;
 			//	std::cerr << "\rEstimated remaining time: " << avg * (image_height * image_width - count) / 1000000000 << ' ';
 			//}
 		}
 	}
+	auto deltaTime = std::chrono::steady_clock::now();
+	//if (count % 100 == 0) {
+	auto delta = std::chrono::duration_cast<std::chrono::seconds>(deltaTime - startTime);
+	std::cout << "\nLine number: " << (image_height - lineIndex) << " to number: " << (image_height - lineIndex) - stride << " finished! elapsed time = " << delta.count() <<std::endl;
+	std::cout << " Thread number " << lineIndex/stride << " joined!\n";
 }
 
 
@@ -153,24 +158,11 @@ int main() {
 
 
 	data = new unsigned char[image_width * image_height * 3];
-	const int samples_per_pixel = 1;
+	const int samples_per_pixel = 25;
 
 
 	// World
 	auto world = random_scene();
-
-	auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-	auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-	auto material_left = make_shared<dielectric>(1.5);
-	auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
-
-	world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
-	world.add(make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, material_center));
-	world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
-	world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), -0.45, material_left));
-	world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
-
-
 
 	std::vector<std::thread> threads;
 	for (int i = 0; i < threadsize; i++) {
@@ -187,11 +179,10 @@ int main() {
 	std::chrono::nanoseconds delta(0);
 	std::chrono::nanoseconds mean(0);
 	
-	
 
 	//stbi_write_png("../image.png", image_width, image_height, 3, data, image_width * sizeof(unsigned char)*3);
-	//stbi_write_tga("../image.tga", image_width, image_height, 3, data);
-	stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
+	stbi_write_tga("../image.tga", image_width, image_height, 3, data);
+	//stbi_write_jpg("../image.jpg", image_width, image_height, 3, data, 100);
 	std::cerr << "\nDone.\n";
 
 	auto end = std::chrono::steady_clock::now();
