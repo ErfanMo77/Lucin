@@ -10,12 +10,14 @@
 #include "Renderer/camera.h"
 #include "Renderer/hittable_list.h"
 #include "Renderer/material.h"
-
+#include "Renderer/moving_sphere.h"
 
 //Global variables
 unsigned char* data;
-const auto aspect_ratio = 3.0 / 2.0;
-const int image_width = 1200;
+
+auto aspect_ratio = 16.0 / 9.0;
+int image_width = 400;
+
 const int image_height = static_cast<int>(image_width / aspect_ratio);
 const int maxDepth = 50;
 
@@ -24,7 +26,7 @@ point3 lookat(0, 0, 0);
 vec3 vup(0, 1, 0);
 auto dist_to_focus = 10.0;
 auto aperture = 0.1;
-camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus,0.0,1.0);
 
 //threads
 int threadsize = 40;
@@ -81,7 +83,9 @@ hittable_list random_scene() {
 					// diffuse
 					auto albedo = color::random() * color::random();
 					sphere_material = make_shared<lambertian>(albedo);
-					world.add(make_shared<sphere>(center, 0.2, sphere_material));
+					auto center2 = center + vec3(0, random_double(0, .5), 0);
+					world.add(make_shared<moving_sphere>(
+						center, center2, 0.0, 1.0, 0.2, sphere_material));
 				}
 				else if (choose_mat < 0.95) {
 					// metal
@@ -112,34 +116,50 @@ hittable_list random_scene() {
 }
 
 void render(int lineIndex, int samples_per_pixel, hittable_list world) {
-	int stride = image_height / threadsize;
+
+	int stride = (image_height / threadsize);
+	lineIndex *= stride;
 	int index = (lineIndex)*image_width*3;
+
 	auto startTime = std::chrono::steady_clock::now();
-	for (int j = image_height-lineIndex; j > (image_height-lineIndex) - stride && j!=0; j--) {
-		//std::cerr << "Scanlines remaining: " << j << ' ';
-		if (j == image_height - lineIndex - (stride / 2)) {
-			std::cout << "I'm half way there! \"thread number " << lineIndex / stride << "\"" << std::endl;
-		}
-		for (int i = 0; i < image_width; ++i) {
-			color pixel_color(0, 0, 0);
-			for (int s = 0; s < samples_per_pixel; ++s) {
-				auto u = (i + random_double()) / (int)(image_width - 1);
-				auto v = (j + random_double()) / (int)(image_height - 1);
-				ray r = cam.get_ray(u, v);
-				pixel_color += ray_color(r, world, maxDepth);
+	//last lines 
+	if (lineIndex == (threadsize - 1) * stride) {
+		for (int j = image_height - lineIndex; j != 0; j--)
+		{
+			for (int i = 0; i < image_width; ++i) {
+				color pixel_color(0, 0, 0);
+				for (int s = 0; s < samples_per_pixel; ++s) {
+					auto u = (i + random_double()) / (int)(image_width - 1);
+					auto v = (j + random_double()) / (int)(image_height - 1);
+					ray r = cam.get_ray(u, v);
+					pixel_color += ray_color(r, world, maxDepth);
+				}
+				write_color(pixel_color, samples_per_pixel);
+				data[index++] = static_cast<char>(pixel_color.x());
+				data[index++] = static_cast<char>(pixel_color.y());
+				data[index++] = static_cast<char>(pixel_color.z());
 			}
-
-			write_color(pixel_color, samples_per_pixel);
-			data[index++] = static_cast<char>(pixel_color.x());
-			data[index++] = static_cast<char>(pixel_color.y());
-			data[index++] = static_cast<char>(pixel_color.z());
-			//count++;
-
-
-			//	mean += delta;
-			//	auto avg = (mean + delta).count() / count * 100;
-			//	std::cerr << "\rEstimated remaining time: " << avg * (image_height * image_width - count) / 1000000000 << ' ';
-			//}
+		}
+	}
+	else
+	{
+		for (int j = image_height - lineIndex; j > (image_height - lineIndex) - stride ; j--) {
+			if (j == image_height - lineIndex - (stride / 2)) {
+				std::cout << "I'm half way there! \"thread number " << lineIndex / stride << "\"" << std::endl;
+			}
+			for (int i = 0; i < image_width; ++i) {
+				color pixel_color(0, 0, 0);
+				for (int s = 0; s < samples_per_pixel; ++s) {
+					auto u = (i + random_double()) / (int)(image_width - 1);
+					auto v = (j + random_double()) / (int)(image_height - 1);
+					ray r = cam.get_ray(u, v);
+					pixel_color += ray_color(r, world, maxDepth);
+				}
+				write_color(pixel_color, samples_per_pixel);
+				data[index++] = static_cast<char>(pixel_color.x());
+				data[index++] = static_cast<char>(pixel_color.y());
+				data[index++] = static_cast<char>(pixel_color.z());
+			}
 		}
 	}
 	auto deltaTime = std::chrono::steady_clock::now();
@@ -155,20 +175,18 @@ int main() {
 	//timer
 	auto start = std::chrono::steady_clock::now();
 	
-
+	int samples_per_pixel = 20;
 
 	data = new unsigned char[image_width * image_height * 3];
-	const int samples_per_pixel = 25;
-
 
 	// World
 	auto world = random_scene();
 
 	std::vector<std::thread> threads;
 	for (int i = 0; i < threadsize; i++) {
-		threads.push_back(std::thread(render,i*(image_height/threadsize),samples_per_pixel, world));
+		threads.push_back(std::thread(render,i,samples_per_pixel, world));
 	}
-
+	std::cout << "started rendering..." << std::endl;
 	for(auto& thread:threads)
 	{
 		thread.join();
